@@ -1,37 +1,44 @@
-# Reproducible Research: Peer Assessment 1
+---
+title: "Reproducible Research: Assignment #1"
+output: 
+  html_document:
+    keep_md: true
+---
 
+## 1. Introduction
 
-## Loading and preprocessing the data
+This report is prepared for *Assignment 1* of **Reproducible Research** course (Coursera, Data Science Specialization, Johns Hopkins Bloomberg School of Public Health).
+
+This assignment makes use of 2-months data (October-November, 2012) from a personal activity monitoring device, which collects information about the number of steps taken by a person at 5 minute intervals throughout the day.
+
+The dataset for analysis is stored in a comma-separated-value (CSV) file and contains 17,568 observations of 3 variables:
+
+* **steps**: Number of steps took in a 5-minute interval (missing values are coded as NA);
+* **date**: The date on which the measurement was taken (in YYYY-MM-DD format);
+* **interval**: Identifier for the 5-minute interval in which measurement was taken.
+
+## 2. Loading and preprocessing the data
 
 
 ```r
-# Unzip the "activity.zip" archive
+# Unzip the archive
 # Load the data into R
-# Although the task instructions say that all the data preprocessing should be done at this section I think it would be more understandably if I do it separately for each part of the assignment
+# Converting date variable from factor to date format 
 
 unzip("activity.zip")
 activity<-read.csv("activity.csv")
 activity$date<-as.Date(activity$date)
 ```
 
-Initial dataset - *activity* - includes **17568** rows and **3** columns (steps, date, interval). Among them there are NA values - the dataset includes **2304** intervals with undefined number of steps taken. 
-
-## What is mean total number of steps taken per day?
-
-**For this part of analysis we will ignore missing values in our dataset.**
+## 3. What is mean total number of steps taken per day?
 
 
 ```r
-# At the first stage of the data transformation our dataset still contains NA's. But after applying 'aggregate' function we get rid of them ('na.action' argument of this function, which indicates what should happen when the data contain NA values is set by default to ignore missing values in the given dataset)
+# Lets aggregate total number of steps taken by date
+# aggregate() by default ignores NAs in the data
 
-activity_1<-aggregate(steps ~ date, data=activity, sum)
-```
-
-
-```r
-# Calculating mean and median of the total number of steps taken per day
-
-head(activity_1)
+activityDay<-aggregate(steps ~ date, data=activity, sum)
+head(activityDay)
 ```
 
 ```
@@ -44,8 +51,13 @@ head(activity_1)
 ## 6 2012-10-07 11015
 ```
 
+
 ```r
-mean(activity_1$steps)
+# Calculating mean and median of the total number of steps taken per day
+
+meanDay <- mean(activityDay$steps)
+medianDay <- median(activityDay$steps)
+meanDay
 ```
 
 ```
@@ -53,7 +65,7 @@ mean(activity_1$steps)
 ```
 
 ```r
-median(activity_1$steps)
+medianDay
 ```
 
 ```
@@ -61,37 +73,39 @@ median(activity_1$steps)
 ```
 
 So, the mean and median number of steps taken per day are very close. 
+It means that our dataset is not much skewed and does not contains large outliers.
 
 
 ```r
-# Instal 'ggplot2' package to make graphs and diagrams
-# Installing 'ggplot2' package requires presence of 'plyr' package, which I will need later. That's why I will not install 'plyr' package separately later in my code
-
-install.packages("ggplot2", repos="http://cran.rstudio.com/")
+# For this code to work 'ggplot2' package for making graphs and diagrams
+# must be preinstalled
 library(ggplot2)
 ```
 
 
 ```r
-# Because mean (red dashed line) and median (blue dotted line) of total number of steps taken per day are so close (10765~10766.19) you can't see them clearly as separate lines on the graph 
+# Because the mean (green dashed line) and the median (blue dotted line) 
+# of total number of steps taken per day are so close 
+# you can't see them clearly as separate lines on the graph 
 
-ggplot(data=activity_1, aes(activity_1$steps))+ geom_histogram(fill = "dimgray") + ggtitle("Total number of steps taken each day (without NA's)") + xlab("Steps") + ylab("Count") + geom_vline(aes(xintercept=mean(activity_1$steps)), color="red", linetype="dashed", size=1)+ geom_vline(aes(xintercept=median(activity_1$steps)), color="blue", linetype="dotted", size=1)
+ggplot(data=activityDay, aes(activityDay$steps))+ geom_histogram(fill = "dimgray") + ggtitle("Total number of steps taken each day (without NA's)") + xlab("Steps") + ylab("Count")+ geom_vline(aes(xintercept=meanDay), color="red", linetype="dashed", size=1) + geom_vline(aes(xintercept=medianDay), color="blue", linetype="dotted", size=1) + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
-## What is the average daily activity pattern?
+## 4. What is the average daily activity pattern?
 
 
 ```r
-# Interval, which on average contains the maximum number of steps taken
+# Lets aggregate total number of steps taken by interval (averaged across all days)
+# And determine interval which on average contains the maximum number of steps taken
 
-activity_2<-aggregate(steps ~ interval, data=activity, mean)
-head(activity_2)
+activityInt<-aggregate(steps ~ interval, data=activity, mean)
+head(activityInt)
 ```
 
 ```
@@ -105,33 +119,39 @@ head(activity_2)
 ```
 
 ```r
-activity_2[which(activity_2$steps==max(activity_2$steps)), 1]
+maxSteps <- max(activityInt$steps)
+maxSteps
+```
+
+```
+## [1] 206.1698
+```
+
+```r
+maxStepsInt <- activityInt[which(activityInt$steps==max(activityInt$steps)), 1]
+maxStepsInt
 ```
 
 ```
 ## [1] 835
 ```
 
-So, the maximum number of steps are usually taken on **835** of the 5-minutes intervals and is equal to **206.1698113**.
-
 
 ```r
 # Time series plot
-
-ggplot(activity_2, aes(interval, steps)) + geom_line() + xlab("5 minutes interval") + ylab("Steps")
+ggplot(activityInt, aes(interval, steps)) + geom_line() + ggtitle("Average number of steps taken per interval (without NA's)") + xlab("5 minutes interval") + ylab("Steps") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
 
-## Imputing missing values
+## 5. Imputing missing values
 
-**Now we will imput missing values in our estimates.**
+`activity` dataset contains 2304 NA values - intervals with undefined number of steps taken. Its presence may introduce bias into some calculations or summaries of the data. Lets adopt some strategy to fill the gaps in data.
 
 
 ```r
 # Total number of missing values
-
 sum(is.na(activity$steps))
 ```
 
@@ -141,8 +161,8 @@ sum(is.na(activity$steps))
 
 ```r
 # Lets do some data mining
-# How much days do we have in our dataset?
 
+# How much days do we have in our dataset?
 length(unique(activity$date))
 ```
 
@@ -152,20 +172,9 @@ length(unique(activity$date))
 
 ```r
 # How much days with NA values do we have in our dataset?
-
 not<-is.na(activity$steps)
-activity_NA<-activity[not,]
-activity_NA<-droplevels(activity_NA)
-unique(activity_NA$date)
-```
-
-```
-## [1] "2012-10-01" "2012-10-08" "2012-11-01" "2012-11-04" "2012-11-09"
-## [6] "2012-11-10" "2012-11-14" "2012-11-30"
-```
-
-```r
-length(unique(activity_NA$date))
+activityNA<-activity[not,]
+length(unique(activityNA$date))
 ```
 
 ```
@@ -173,12 +182,17 @@ length(unique(activity_NA$date))
 ```
 
 ```r
-# So, among 61 days only 8 of them have NA's
+# So, among 61 days only 8 contain NAs
+```
 
-# The next step is to determine are there any days, which have no values at all
-# Each day has 288 observations (24 hours * 12 five minutes intervals), so we need to check if there is any days there all of them are NA's
 
-aggregate(interval ~ date, data=activity_NA, length)
+```r
+# The next step is to determine whether there are any "empty" days in the dataset
+# (where each value is NA)
+# Each day has 288 observations (24 hours * 12 five minutes intervals)
+# Lets see how many NAs we have for each day containing NAs
+
+aggregate(interval ~ date, data=activityNA, length)
 ```
 
 ```
@@ -194,63 +208,49 @@ aggregate(interval ~ date, data=activity_NA, length)
 ```
 
 ```r
-# So, there are no days in our dataset, that contain patrially filled data - it's either we have all observations for a particular day, or no values for that day at all (288*8=2304)
-# It means that we cannot use strategy "use the mean/median for that day" for imputting missing values in our dataset. And the only option we have left with is to use "mean for that 5-minute interval". Likely we have already calculated means for all 5-minutes intervals earlier and now we only need to insert them into our data.
+# So, we have no partially filled data - its either we have full day observations or no observations at all
+# Therefore, we cannot use strategy "mean/median for that day" for imputting missing values
+# The only option left is "mean for 5-minutes interval"
+```
 
-# Lets first create dataset that doesn't contain NA's
 
-activity_3<-activity[!not, ]
+```r
+# Lets first create dataset that doesn't contain NAs
 
-# Now we have 3 datasets to work with: 1) activity_3 - contains only "good" observations; 2) activity_NA - contains only "bad" observations; 3) activity_2 - contains means for 5-minutes intervals averaged across all days
+activityFull <- activity[!not, ]
 
-# First I want to remove unnessesary column 'steps' in 'activity_NA' dataset (all values there are NA's)
+# Now we have 3 datasets to work with: 
+# 1 - activityFull - contains only "good" observations
+# 2 - activityNA - contains only "bad" observations
+# 3 - activityInt - contains means for 5-minutes intervals averaged across all days
 
-activity_NA<-activity_NA[, 2:3]
-
-# Now lets join second and third datasets by 'interval' column
-
+# Lets load plyr package we will need later on
 library(plyr)
 
-activity_4<-join(activity_NA, activity_2, by = "interval")
-activity_4<-activity_4[, c(3,1,2)] # rearranging the columns' order
+# Our transformation will consist of several steps
 
-# Now let's join 'activity_3' and 'activity_4' datasets
+# 1. Remove `steps` column from `activityNA` (all values are NAs)
+activityNA<-activityNA[, 2:3]
 
-activity_5<-rbind(activity_3, activity_4)
-activity_5<-activity_5[order(activity_5$date),]
-rownames(activity_5)<-NULL # reset indexes in data frame
+# 2. Join second and third datasets by `interval` column
+activityNAfilled<-join(activityNA, activityInt, by = "interval")
+activityNAfilled<-activityNAfilled[, c(3,1,2)] # rearranging the columns' order
 
-# "Make a histogram of the total number of steps taken each day..."
-
-activity_6<-aggregate(steps ~ date, data=activity_5, sum)
-
-ggplot(data=activity_6, aes(activity_6$steps))+ geom_histogram(fill = "dimgray") + ggtitle("Total number of steps taken each day (with NA's filled in)") + xlab("Steps") + ylab("Count") + geom_vline(aes(xintercept=mean(activity_6$steps)), color="red", linetype="dashed", size=1)+ geom_vline(aes(xintercept=median(activity_6$steps)), color="blue", linetype="dotted", size=1)
+# 3. Join 'activityFull' and 'activityNAfilled'
+activityNew<-rbind(activityFull, activityNAfilled)
+activityNew<-activityNew[order(activityNew$date),] # sort according to date
+rownames(activityNew)<-NULL # reset indexes in data frame
 ```
 
-```
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
-```
-
-![](PA1_template_files/figure-html/unnamed-chunk-8-1.png) 
 
 ```r
-# "...calculate and report the mean and median total number of steps taken per day"
+# Histogram of the total number of steps taken each day 
+# with mean and median reported
+activityDayNew <- aggregate(steps ~ date, data=activityNew, sum)
 
-head(activity_6)
-```
-
-```
-##         date    steps
-## 1 2012-10-01 10766.19
-## 2 2012-10-02   126.00
-## 3 2012-10-03 11352.00
-## 4 2012-10-04 12116.00
-## 5 2012-10-05 13294.00
-## 6 2012-10-06 15420.00
-```
-
-```r
-mean(activity_6$steps)
+meanDayNew <- mean(activityDayNew$steps)
+medianDayNew <- median(activityDayNew$steps)
+meanDayNew
 ```
 
 ```
@@ -258,45 +258,54 @@ mean(activity_6$steps)
 ```
 
 ```r
-median(activity_6$steps)
+medianDayNew
 ```
 
 ```
 ## [1] 10766.19
 ```
 
-As we see, after imputting missing values we get slightly different estimate of the total number of steps taken per day median (it approached mean), but the mean remained the same.
+```r
+ggplot(data=activityDayNew, aes(activityDayNew$steps))+ geom_histogram(fill = "dimgray") + ggtitle("Total number of steps taken each day (with NA's filled in)") + xlab("Steps") + ylab("Count") + geom_vline(aes(xintercept=meanDayNew), color="red", linetype="dashed", size=1)+ geom_vline(aes(xintercept=medianDayNew), color="blue", linetype="dotted", size=1) + theme(plot.title = element_text(hjust = 0.5))
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+As we see, after inputting missing values we get slightly different estimate of the total number of steps taken per day median (it approached mean), but the mean remained the same.
+
+## 6. Are there differences in activity patterns between weekdays and weekends?
 
 
 ```r
-# Lets create a new columon in our dataset indicating the day of the week and transforming it to show whether it's weekday or weekend
-
-activity_5$weekdays<-as.factor(weekdays(activity_5$date))
-levels(activity_5$weekdays)
+# Lets create a new columon in our dataset indicating whether
+# it's weekday or weekend
+activityNew$weekdays<-as.factor(weekdays(activityNew$date))
+levels(activityNew$weekdays)
 ```
 
 ```
-## [1] "Ð²Ð¾ÑÐºÑ€ÐµÑÐµÐ½ÑŒÐµ" "Ð²Ñ‚Ð¾Ñ€Ð½Ð¸Ðº"     "Ð¿Ð¾Ð½ÐµÐ´ÐµÐ»ÑŒÐ½Ð¸Ðº" "Ð¿ÑÑ‚Ð½Ð¸Ñ†Ð°"     "ÑÑ€ÐµÐ´Ð°"      
-## [6] "ÑÑƒÐ±Ð±Ð¾Ñ‚Ð°"     "Ñ‡ÐµÑ‚Ð²ÐµÑ€Ð³"
+## [1] "âîñêðåñåíüå" "âòîðíèê"     "ïîíåäåëüíèê" "ïÿòíèöà"     "ñðåäà"      
+## [6] "ñóááîòà"     "÷åòâåðã"
 ```
 
 ```r
-recode<-list("weekday"=levels(activity_5$weekdays)[c(2,3,4,5,7)], "weekend"= levels(activity_5$weekdays)[c(1,6)]) 
-levels(activity_5$weekdays)<-recode # replacing days of the week  by 'weekday', 'weekend' feature
+recode<-list("weekday"=levels(activityNew$weekdays)[c(2,3,4,5,7)], "weekend"= levels(activityNew$weekdays)[c(1,6)])
+levels(activityNew$weekdays)<-recode # replacing days of the week  by 'weekday'-'weekend'
 
-# Lets separate the dataset into 2 - with weekdays and weekends
+# Lets separate the dataset into 2 - for weekdays and weekends
+activityWD<-activityNew[which(activityNew$weekdays=="weekday"),]
+activityWE<-activityNew[which(activityNew$weekdays=="weekend"),]
 
-activity_wd<-activity_5[which(activity_5$weekdays=="weekday"),]
-activity_we<-activity_5[which(activity_5$weekdays=="weekend"),]
-
-activity_wd_t<-aggregate(steps ~ interval, data=activity_wd, mean)
-activity_we_t<-aggregate(steps ~ interval, data=activity_we, mean)
+# Lets aggregate it now by intervals
+activityWDint<-aggregate(steps ~ interval, data=activityWD, mean)
+activityWEint<-aggregate(steps ~ interval, data=activityWE, mean)
 
 # Lets compare the average number of steps taken on weekdays and weekends
-
-sum(activity_wd_t$steps)
+sum(activityWDint$steps)
 ```
 
 ```
@@ -304,30 +313,29 @@ sum(activity_wd_t$steps)
 ```
 
 ```r
-sum(activity_we_t$steps)
+sum(activityWEint$steps)
 ```
 
 ```
 ## [1] 12201.52
 ```
 
+So, as we could have expected average number of steps taken on weekends is greater than that on weekdays.
+
+
 ```r
-# So, as we could have expected average number of steps taken on weekends is greater than that on weekdays
+# For this code to work `grid` and `greeextract` packages must be preinstalled
+library(grid)
+library(gridExtra)
 ```
 
 
 ```r
-# Drawing separate graphs to compare daily activity patterns in weekdays and weekends
-
-library(grid)
-
-install.packages("gridExtra", repos="http://cran.rstudio.com/")
-library(gridExtra)
-
-WD<-ggplot(activity_wd_t, aes(interval, steps)) + geom_line() + ggtitle("weekdays") + xlab("5 minutes interval") + ylab("Steps")
-WE<-ggplot(activity_we_t, aes(interval, steps)) + geom_line() + ggtitle("weekends") + xlab("5 minutes interval") + ylab("Steps")
+# Drawing separate graphs to compare daily activity patterns for weekdays and weekends
+WD<-ggplot(activityWDint, aes(interval, steps)) + geom_line() + ggtitle("weekdays") + xlab("5 minutes interval") + ylab("Steps") + theme(plot.title = element_text(hjust = 0.5))
+WE<-ggplot(activityWEint, aes(interval, steps)) + geom_line() + ggtitle("weekends") + xlab("5 minutes interval") + ylab("Steps") + theme(plot.title = element_text(hjust = 0.5))
 grid.arrange(WD, WE, nrow=2)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
